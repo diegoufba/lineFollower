@@ -2,15 +2,15 @@ from controller import Robot
 
 def run_robot(robot):
     time_step = 32
-    max_speed = 6.28
+    max_speed = 1.0
 
     # Motors
     left_motor = robot.getDevice('left wheel motor')
     right_motor = robot.getDevice('right wheel motor')
     left_motor.setPosition(float('inf'))
     right_motor.setPosition(float('inf'))
-    left_motor.setVelocity(1.0)
-    right_motor.setVelocity(1.0)
+    left_motor.setVelocity(max_speed)
+    right_motor.setVelocity(max_speed)
 
     # Enable ir sensors
     left_ir0 = robot.getDevice('ir0left')
@@ -26,7 +26,17 @@ def run_robot(robot):
     right_ir1.enable(time_step)
     right_ir2 = robot.getDevice('ir2right')
     right_ir2.enable(time_step)
- 
+     
+    erro_anterior = 0
+    integral_erro = 0
+    limite_integral = 10
+    #CONSTANTES DOS CONTROLADORES
+    kd_PD = 1
+    kp_PD = 1
+    
+    kd_PDI = 1
+    kp_PDI = 1
+    ki_PDI = 0.1
 
     # Step simulation
     while robot.step(time_step) != -1:
@@ -51,20 +61,55 @@ def run_robot(robot):
         right_ir2_value = 1 if right_ir2_value< 5 else 0 
         
         print(f"-Valores normalizados: left: [{left_ir0_value}, {left_ir1_value}, {left_ir2_value}] right: [{right_ir0_value}, {right_ir1_value}, {right_ir2_value}]")
-        error = (left_ir0_value + left_ir1_value + left_ir2_value) - (right_ir0_value + right_ir1_value + right_ir2_value)
-        print(f"--ERROR: {error}")
-        left_speed = max_speed * 0.25
-        right_speed = max_speed * 0.25
-
-        #if (left_ir_value > right_ir_value) and (6 < left_ir_value < 15):
-            #print("Go left")
-            #left_speed = max_speed * 0.25
-        #elif (right_ir_value > left_ir_value) and (6 < right_ir_value < 15):
-            #print("Go right")
-           # right_speed = -max_speed * 0.25
-
-        #left_motor.setVelocity(left_speed)
-        #right_motor.setVelocity(right_speed)
+        erro = (left_ir0_value + left_ir1_value + left_ir2_value) - (right_ir0_value + right_ir1_value + right_ir2_value)
+        #OU - Linha é pequena, nunca vai estar 2 ao mesmo tempo
+        #erro = (left_ir0_value + 2*left_ir1_value + 3*left_ir2_value) - (right_ir0_value + 2*right_ir1_value + 3*right_ir2_value)
+        
+        #PD
+        #derivada_erro = (erro - erro_anterior)/time_step
+        #controle = erro*kp_PD + derivada_erro*kd_PD
+        
+        #if controle > 0: #Está virando para a esquerda ajustar para a direita
+            #left_motor.setVelocity(max_speed+controle)
+            #right_motor.setVelocity(max_speed-controle)
+        #elif controle < 0: #Está virando para a direita ajustar para a esquerda
+            #left_motor.setVelocity(max_speed-controle)
+            #right_motor.setVelocity(max_speed+controle)
+        #else:
+            #left_motor.setVelocity(max_speed)
+            #right_motor.setVelocity(max_speed)
+        
+        #print(f"--ERROR: {erro}")
+        
+        #erro_anterior = erro   
+        
+        #PDI
+        derivada_erro = (erro - erro_anterior)/time_step
+        
+        integral_erro += erro
+        if integral_erro > limite_integral:
+            integral_erro = limite_integral
+        elif integral_erro < -limite_integral:
+            integral_erro = -limite_integral
+            
+        if erro == 0: 
+            integral_erro *= 0.7
+            
+        controle = erro*kp_PDI + derivada_erro*kd_PDI + integral_erro*ki_PDI
+            
+        if controle > 0: #Está virando para a esquerda ajustar para a direita
+            left_motor.setVelocity(max_speed+controle)
+            right_motor.setVelocity(max_speed-controle)
+        elif controle < 0: #Está virando para a direita ajustar para a esquerda
+            left_motor.setVelocity(max_speed-controle)
+            right_motor.setVelocity(max_speed+controle)
+        else:
+            left_motor.setVelocity(max_speed)
+            right_motor.setVelocity(max_speed)
+        
+        print(f"--ERROR: {erro}")
+        
+        erro_anterior = erro   
 
 if __name__ == "__main__":
     my_robot = Robot()
