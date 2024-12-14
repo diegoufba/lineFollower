@@ -7,6 +7,8 @@ def run_robot(robot):
     # Motors
     left_motor = robot.getDevice('left wheel motor')
     right_motor = robot.getDevice('right wheel motor')
+    
+    
     left_motor.setPosition(float('inf'))
     right_motor.setPosition(float('inf'))
     left_motor.setVelocity(1.0)
@@ -26,7 +28,6 @@ def run_robot(robot):
     right_ir1.enable(time_step)
     right_ir2 = robot.getDevice('ir2right')
     right_ir2.enable(time_step)
- 
 
     # Step simulation
     while robot.step(time_step) != -1:
