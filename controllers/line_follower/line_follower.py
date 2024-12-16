@@ -37,9 +37,22 @@ def run_robot(robot):
     kd_PDI = 1
     kp_PDI = 1
     ki_PDI = 0.1
+    
+    ir_threshould = 100.0 # valor original = 5
+    wait_time = 1000
+    elapsed_time = 0
+    
+    # Preto 316.68
+    # Branco 63.34
 
     # Step simulation
     while robot.step(time_step) != -1:
+        
+        # Espera 1 segundo para o robo se ajeitar
+        elapsed_time += time_step
+        if elapsed_time < wait_time:
+            continue
+        
         # read ir sensors
         left_ir0_value = round(left_ir0.getValue(),2)
         left_ir1_value = round(left_ir1.getValue(), 2)
@@ -52,13 +65,13 @@ def run_robot(robot):
         print(f"left: [{left_ir0_value}, {left_ir1_value}, {left_ir2_value}] right: [{right_ir0_value}, {right_ir1_value}, {right_ir2_value}]")
         
         #NORMALIZAÇÃO - PORQUE DESSES VALORES??? -> Investigar
-        left_ir0_value = 1 if left_ir0_value< 5 else 0 
-        left_ir1_value = 1 if left_ir1_value< 5 else 0
-        left_ir2_value = 1 if left_ir2_value< 5 else 0
+        left_ir0_value = 1 if left_ir0_value< ir_threshould else 0 
+        left_ir1_value = 1 if left_ir1_value< ir_threshould else 0
+        left_ir2_value = 1 if left_ir2_value< ir_threshould else 0
         
-        right_ir0_value = 1 if right_ir0_value< 5 else 0 
-        right_ir1_value = 1 if right_ir1_value< 5 else 0 
-        right_ir2_value = 1 if right_ir2_value< 5 else 0 
+        right_ir0_value = 1 if right_ir0_value< ir_threshould else 0 
+        right_ir1_value = 1 if right_ir1_value< ir_threshould else 0 
+        right_ir2_value = 1 if right_ir2_value< ir_threshould else 0 
         
         print(f"-Valores normalizados: left: [{left_ir0_value}, {left_ir1_value}, {left_ir2_value}] right: [{right_ir0_value}, {right_ir1_value}, {right_ir2_value}]")
         erro = (left_ir0_value + left_ir1_value + left_ir2_value) - (right_ir0_value + right_ir1_value + right_ir2_value)
@@ -96,6 +109,7 @@ def run_robot(robot):
             integral_erro *= 0.7
             
         controle = erro*kp_PDI + derivada_erro*kd_PDI + integral_erro*ki_PDI
+        
             
         if controle > 0: #Está virando para a esquerda ajustar para a direita
             left_motor.setVelocity(max_speed+controle)
