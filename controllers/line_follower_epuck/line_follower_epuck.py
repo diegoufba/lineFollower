@@ -29,7 +29,6 @@ def run_robot(robot):
     right_ir2 = robot.getDevice('ir2right')
     right_ir2.enable(time_step)
     
-    controller = True #True para PD, False para PDI
     
     graph1Timing = 0
     graph1GenerationTiming = 0
@@ -40,15 +39,15 @@ def run_robot(robot):
     integral_erro = 0
     limite_integral = 10
     
-    #DETECTION THRESHOLD (Preto 296.02, Branco 59.2)
-    ir_threshould = 200.0
+    #DETECTION THRESHOLD
+    ir_threshould = 5.0 # valor original = 5
     
     #CONSTANTES DOS CONTROLADORES
     kd_PD = 1
     kp_PD = 1
     
     kd_PDI = 1
-    kp_PDI = 0.5
+    kp_PDI = 1
     ki_PDI = 0.1
     
     #VETORES DOS GRAFICOS
@@ -69,6 +68,7 @@ def run_robot(robot):
         
         #print(f"left: [{left_ir0_value}, {left_ir1_value}, {left_ir2_value}] right: [{right_ir0_value}, {right_ir1_value}, {right_ir2_value}]")
         
+        #NORMALIZAÇÃO - PORQUE DESSES VALORES??? -> Investigar
         #ABSTRACAO APLICADA: 0 significa não detecta a linha preta e 1 significa detecta a linha preta em vez de representar as cores
         left_ir0_value = 0 if left_ir0_value< ir_threshould else 1 
         left_ir1_value = 0 if left_ir1_value< ir_threshould else 1
@@ -79,6 +79,8 @@ def run_robot(robot):
         right_ir2_value = 0 if right_ir2_value< ir_threshould else 1 
         
         #print(f"-Valores normalizados: left: [{left_ir0_value}, {left_ir1_value}, {left_ir2_value}] right: [{right_ir0_value}, {right_ir1_value}, {right_ir2_value}]")
+        #erro = (left_ir0_value + left_ir1_value + left_ir2_value) - (right_ir0_value + right_ir1_value + right_ir2_value)
+        #OU - Linha é pequena, nunca vai estar 2 ao mesmo tempo
         erro = (left_ir0_value + 2*left_ir1_value + 3*left_ir2_value) - (right_ir0_value + 2*right_ir1_value + 3*right_ir2_value)
         
         if graph1Timing >= time_step*50: #Registra o erro medio apos 50 time_steps, 1.6 segundos
@@ -114,58 +116,58 @@ def run_robot(robot):
         else:
             graph1GenerationTiming += time_step
            
-
-        if controller: #Switch PD e PDI
-            #PD
-            derivada_erro = (erro - erro_anterior)/time_step
-            controle = erro*kp_PD + derivada_erro*kd_PD
+              
+        #PD
+        #derivada_erro = (erro - erro_anterior)/time_step
+        #controle = erro*kp_PD + derivada_erro*kd_PD
+        
+        #print(f"---CONTROLE: {controle}")
+        
+        #if controle > 0: #Significa que os sensores da esquerda do robô estão sobre a faixa, está virando para a direita ajustar para a esquerda
+            #left_motor.setVelocity(max_speed-controle)
+            #right_motor.setVelocity(max_speed+controle)
+        #elif controle < 0: #Significa que os sensores da direita do robô estão sobre a faixa, o robo está virando para a esquerda ajustar para a direita
+            #left_motor.setVelocity(max_speed-controle)
+            #right_motor.setVelocity(max_speed+controle)
+        #else:
+            #left_motor.setVelocity(max_speed)
+            #right_motor.setVelocity(max_speed)
+        
+        #print(f"--ERROR: {erro}")
+        
+        #erro_anterior = erro   
+        
+        #PDI
+        derivada_erro = (erro - erro_anterior)/time_step
+        
+        integral_erro += erro
+        if integral_erro > limite_integral:
+            integral_erro = limite_integral
+        elif integral_erro < -limite_integral:
+            integral_erro = -limite_integral
             
-            print(f"---CONTROLE: {controle}")
+        if erro == 0: 
+            integral_erro *= 0.7
             
-            if controle > 0: #Significa que os sensores da esquerda do robô estão sobre a faixa, está virando para a direita ajustar para a esquerda
-                left_motor.setVelocity(max_speed-controle)
-                right_motor.setVelocity(max_speed+controle)
-            elif controle < 0: #Significa que os sensores da direita do robô estão sobre a faixa, o robo está virando para a esquerda ajustar para a direita
-                left_motor.setVelocity(max_speed-controle)
-                right_motor.setVelocity(max_speed+controle)
-            else:
-                left_motor.setVelocity(max_speed)
-                right_motor.setVelocity(max_speed)
+        
+        controle = erro*kp_PDI + derivada_erro*kd_PDI + integral_erro*ki_PDI
+        #print(f"---CONTROLE: {controle}")
             
-            print(f"--ERROR: {erro}")
-            
-            erro_anterior = erro   
+        if controle > 0: #Significa que os sensores da esquerda do robô estão sobre a faixa, está virando para a direita ajustar para a esquerda
+            left_motor.setVelocity(max_speed-controle)
+            right_motor.setVelocity(max_speed+controle)
+        elif controle < 0: #Significa que os sensores da direita do robô estão sobre a faixa, o robo está virando para a esquerda ajustar para a direita
+            left_motor.setVelocity(max_speed-controle)
+            right_motor.setVelocity(max_speed+controle)
         else:
-            #PDI
-            derivada_erro = (erro - erro_anterior)/time_step
-            
-            integral_erro += erro
-            if integral_erro > limite_integral:
-                integral_erro = limite_integral
-            elif integral_erro < -limite_integral:
-                integral_erro = -limite_integral
-                
-            if erro == 0: 
-                integral_erro *= 0.9
-                
-            
-            controle = erro*kp_PDI + derivada_erro*kd_PDI + integral_erro*ki_PDI
-            print(f"---CONTROLE: {controle}")
-                
-            if controle > 0: #Significa que os sensores da esquerda do robô estão sobre a faixa, está virando para a direita ajustar para a esquerda
-                left_motor.setVelocity(max_speed-controle)
-                right_motor.setVelocity(max_speed+controle)
-            elif controle < 0: #Significa que os sensores da direita do robô estão sobre a faixa, o robo está virando para a esquerda ajustar para a direita
-                left_motor.setVelocity(max_speed-controle)
-                right_motor.setVelocity(max_speed+controle)
-            else:
-                #left_motor.setVelocity(max_speed)
-                #right_motor.setVelocity(max_speed)
-            
-            print(f"--ERROR: {erro}")
-            
-            erro_anterior = erro   
-                
+            left_motor.setVelocity(max_speed)
+            right_motor.setVelocity(max_speed)
+        
+        #print(f"--ERROR: {erro}")
+        
+        erro_anterior = erro   
+        
+        
 
 if __name__ == "__main__":
     my_robot = Robot()
