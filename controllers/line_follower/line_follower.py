@@ -159,8 +159,8 @@ def run_robot(robot):
                 left_motor.setVelocity(max_speed-controle)
                 right_motor.setVelocity(max_speed+controle)
             else:
-                #left_motor.setVelocity(max_speed)
-                #right_motor.setVelocity(max_speed)
+                left_motor.setVelocity(max_speed)
+                right_motor.setVelocity(max_speed)
             
             print(f"--ERROR: {erro}")
             
