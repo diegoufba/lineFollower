@@ -44,12 +44,12 @@ def run_robot(robot):
     ir_threshould = 200.0
     
     #CONSTANTES DOS CONTROLADORES
-    kd_PD = 1
-    kp_PD = 1
+    kd_PD = 2.0
+    kp_PD = 4.0
     
-    kd_PDI = 1
-    kp_PDI = 0.5
-    ki_PDI = 0.1
+    kd_PDI = 1.0
+    kp_PDI = 4.0
+    ki_PDI = 0.05
     
     #VETORES DOS GRAFICOS
     x_graph_erro_medio = []
