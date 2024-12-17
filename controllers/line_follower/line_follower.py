@@ -49,9 +49,20 @@ def run_robot(robot):
     #VETORES DOS GRAFICOS
     x_graph_erro_medio = []
     y_graph_erro_medio = []
+    
+    # Preto 316.68
+    # Branco 63.34
+    ir_threshould = 100.0 # valor original = 5
+    wait_time = 1000
+    elapsed_time = 0
 
     # Step simulation
     while robot.step(time_step) != -1:
+    
+        # Espera 1 segundo para o robo se ajeitar
+        elapsed_time += time_step
+        if elapsed_time < wait_time:
+            continue
         
         # read ir sensors
         left_ir0_value = round(left_ir0.getValue(),2)
@@ -66,13 +77,13 @@ def run_robot(robot):
         
         #NORMALIZAÇÃO - PORQUE DESSES VALORES??? -> Investigar
         #ABSTRACAO APLICADA: 0 significa não detecta a linha preta e 1 significa detecta a linha preta em vez de representar as cores
-        left_ir0_value = 0 if left_ir0_value< 5 else 1 
-        left_ir1_value = 0 if left_ir1_value< 5 else 1
-        left_ir2_value = 0 if left_ir2_value< 5 else 1
+        left_ir0_value = 0 if left_ir0_value< ir_threshould else 1 
+        left_ir1_value = 0 if left_ir1_value< ir_threshould else 1
+        left_ir2_value = 0 if left_ir2_value< ir_threshould else 1
         
-        right_ir0_value = 0 if right_ir0_value< 5 else 1 
-        right_ir1_value = 0 if right_ir1_value< 5 else 1 
-        right_ir2_value = 0 if right_ir2_value< 5 else 1 
+        right_ir0_value = 0 if right_ir0_value< ir_threshould else 1 
+        right_ir1_value = 0 if right_ir1_value< ir_threshould else 1 
+        right_ir2_value = 0 if right_ir2_value< ir_threshould else 1 
         
         print(f"-Valores normalizados: left: [{left_ir0_value}, {left_ir1_value}, {left_ir2_value}] right: [{right_ir0_value}, {right_ir1_value}, {right_ir2_value}]")
         #erro = (left_ir0_value + left_ir1_value + left_ir2_value) - (right_ir0_value + right_ir1_value + right_ir2_value)
